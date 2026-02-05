@@ -1,0 +1,28 @@
+project_id = "ftsalpwfnhrzjrrgbxus"
+
+[functions.generate-worker-id]
+verify_jwt = false
+
+[functions.send-otp]
+verify_jwt = false
+
+[functions.verify-otp]
+verify_jwt = false
+
+[functions.get-portal-stats]
+verify_jwt = false
+
+[functions.translate-medical-report]
+verify_jwt = false
+
+[functions.translate-document]
+verify_jwt = false
+
+[functions.extract-pdf-text]
+verify_jwt = false
+
+[functions.process-document-ocr]
+verify_jwt = false
+
+[functions.sync-health-data]
+verify_jwt = false
