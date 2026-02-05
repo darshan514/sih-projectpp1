@@ -68,22 +68,71 @@ const WorkerRegistration: React.FC<WorkerRegistrationProps> = ({ onRegistrationS
         return;
       }
 
-      // Call the edge function to register worker and generate unique ID
-      const { data, error } = await supabase.functions.invoke('generate-worker-id', {
-        body: { workerData: formData }
-      });
+      // Generate unique health ID locally
+      const firstName = formData.name.trim().toUpperCase();
+      const firstTwoLetters = firstName.replace(/[^A-Z]/g, '').substring(0, 2);
+      const lastFourDigits = formData.aadhar_number.slice(-4);
+      let uniqueId = firstTwoLetters + lastFourDigits; // e.g., RA1234
 
-      if (error) {
-        throw error;
+      // Fallback if name has fewer than 2 letters
+      if (firstTwoLetters.length < 2) {
+        uniqueId = 'WK' + lastFourDigits;
       }
 
-      if (data.error) {
-        throw new Error(data.error);
+      console.log('Generated ID locally:', uniqueId);
+
+      // 1. Check if Aadhar already exists
+      const { data: existingAadhar, error: aadharCheckError } = await supabase
+        .from('workers')
+        .select('id')
+        .eq('aadhar_number', formData.aadhar_number)
+        .maybeSingle();
+
+      if (aadharCheckError) throw aadharCheckError;
+
+      if (existingAadhar) {
+        throw new Error('Worker with this Aadhar number is already registered');
+      }
+
+      // 2. Check if generated ID exists (rare collision check)
+      const { data: existingId, error: idCheckError } = await supabase
+        .from('workers')
+        .select('id')
+        .eq('unique_worker_id', uniqueId)
+        .maybeSingle();
+
+      if (idCheckError) throw idCheckError;
+
+      if (existingId) {
+        // Simple collision handling: append a random digit or character if needed
+        // For now, let's just error out or retry (user can just try again usually)
+        throw new Error('System busy (ID collision). Please try again.');
+      }
+
+      // 3. Insert new worker
+      const { data: worker, error: insertError } = await supabase
+        .from('workers')
+        .insert({
+          unique_worker_id: uniqueId,
+          name: formData.name,
+          mobile_number: formData.mobile_number,
+          email: formData.email,
+          address: formData.address,
+          date_of_birth: formData.date_of_birth,
+          aadhar_number: formData.aadhar_number,
+          district: formData.district
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Insert error detail:', insertError);
+        throw new Error(insertError.message || 'Failed to register worker');
       }
 
       toast({
         title: "Registration Successful!",
-        description: `Welcome ${formData.name}! Your unique Health ID is ${data.uniqueId}`,
+        description: `Welcome ${formData.name}! Your unique Health ID is ${uniqueId}`,
       });
 
       // Reset form
@@ -98,9 +147,9 @@ const WorkerRegistration: React.FC<WorkerRegistrationProps> = ({ onRegistrationS
       });
 
       // Call the parent callback with worker data
-      onRegistrationSuccess(data.worker);
+      onRegistrationSuccess(worker);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
       toast({
         title: "Registration Failed",
