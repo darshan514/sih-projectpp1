@@ -177,12 +177,11 @@ If you want to run it locally:
 - Encrypted data
 
 ## Team Neuron
-1) Siddharth Varpe
-2) Pratikasha Gavhale
-3) Nisha Lende
-4) Samyak Mehta
-5) Kartik Vaidya
-6) Aniket Chitre
+1) Darshan
+2) harsith
+3) barinistha
+4) darshna
+
 
 
 ## References
